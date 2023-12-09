@@ -1,0 +1,42 @@
+#version 450
+#pragma shader_stage(compute)
+#extension GL_EXT_debug_printf : enable
+
+layout (std430, set=0, binding=0) buffer inMatrix { float matrix[]; };
+layout (std430, set=0, binding=1) buffer inKernel { float kernel[]; };
+layout (std430, set=0, binding=2) buffer outR { float result[]; };
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+void main() {
+    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+
+    int input_height = 3;
+    int input_width = 3;
+    int kernel_height = 2;
+    int kernel_width = 2;
+    int output_width = input_width - kernel_width + 1;
+    int output_height = input_height - kernel_height + 1;
+
+    int outputIdx = pixelCoords.y * output_width + pixelCoords.x;
+
+
+    if (pixelCoords.x < output_width && pixelCoords.y < output_height) {
+        float sum = 0;
+
+        for (int i = 0; i < kernel_height; ++i) {
+            for (int j = 0; j < kernel_width; ++j) {
+                ivec2 inputCoords = pixelCoords + ivec2(i, j);
+                int inputIdx = inputCoords.y * input_width + inputCoords.x;
+                int kernelIdx = i * kernel_width + j;
+
+                debugPrintfEXT("kernel[%d,%d]: %d", i, j, kernel[kernelIdx]);
+                debugPrintfEXT("input[%d,%d]: %d", inputCoords.y, inputCoords.x, matrix[inputIdx]);
+
+                sum += matrix[inputIdx] * kernel[kernelIdx];
+            }
+        }
+
+        int outputIdx = pixelCoords.y * output_width + pixelCoords.x;
+    }
+}
